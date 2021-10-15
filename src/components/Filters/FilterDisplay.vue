@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-wrap items-center p-4" aria-live="polite">
-    <span v-if="isAnyFilterApplied" class="mr-2 font-semibold">
+    <span v-if="isAnyFilterApplied" class="mr-2 mb-2 font-semibold">
       {{ $t('filters.filter-by') }}
     </span>
     <FilterTag
@@ -9,6 +9,7 @@
       :code="filter.code"
       :label="filter.name"
       :filter-type="filter.filterType"
+      class="mr-2 mb-2"
       @filterChanged="onUpdateFilter"
     />
   </div>

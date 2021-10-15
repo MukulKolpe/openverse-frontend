@@ -6,7 +6,7 @@ exports[`FilterDisplay should render correct contents 1`] = `
   class="flex flex-wrap items-center p-4"
 >
   <span
-    class="mr-2 font-semibold"
+    class="mr-2 mb-2 font-semibold"
   >
     
     filters.filter-by
@@ -15,7 +15,7 @@ exports[`FilterDisplay should render correct contents 1`] = `
    
   <button
     aria-label="filters.filter-tag-aria"
-    class="filter-block button tiny tag mx-1 mb-2"
+    class="filter-block button tiny tag mr-2 mb-2"
   >
     <span>
       filters.licenses.cc0
