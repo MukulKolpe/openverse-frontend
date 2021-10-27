@@ -9,7 +9,7 @@
     >
       <span>{{ buttonLabel }}</span>
     </button>
-    <LoadingIcon :should-show="isFetching" />
+    <LoadingIcon v-show="isFetching" />
   </div>
 </template>
 <script>

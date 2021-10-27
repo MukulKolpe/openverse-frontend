@@ -3,6 +3,7 @@
     id="tab-image"
     role="tabpanel"
     aria-labelledby="image"
+    data-testid="search-grid"
     @onLoadMoreImages="onLoadMoreImages"
   />
 </template>

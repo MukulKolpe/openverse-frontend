@@ -96,11 +96,12 @@ const BrowsePage = {
       setSearchTypeFromUrl: SET_SEARCH_TYPE_FROM_URL,
       updateSearchType: UPDATE_SEARCH_TYPE,
     }),
+    ...mapActions(FILTER, { setFiltersFromUrl: SET_FILTERS_FROM_URL }),
     ...mapMutations(SEARCH, {
       setQuery: SET_QUERY,
+      setFilterVisibility: SET_FILTER_IS_VISIBLE,
     }),
     ...mapMutations(FILTER, {
-      setFiltersFromUrl: SET_FILTERS_FROM_URL,
       setFilterVisibility: SET_FILTER_IS_VISIBLE,
     }),
     getMediaItems(params, mediaType) {

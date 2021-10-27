@@ -1,33 +1,31 @@
+import Vuex from 'vuex'
+import { createLocalVue } from '@vue/test-utils'
 import SearchGridForm from '~/components/SearchGridForm'
 import render from '../../test-utils/render'
-import { createLocalVue } from '@vue/test-utils'
-import Vuex from 'vuex'
-
-const localVue = createLocalVue()
-localVue.use(Vuex)
-const storeMock = new Vuex.Store({
-  modules: {
-    filter: {
-      namespaced: true,
-      state: { isFilterVisible: true },
-    },
-    search: {
-      namespaced: true,
-      state: { query: { q: 'foo' } },
-    },
-  },
-})
 
 describe('SearchGridForm', () => {
   it('should render correct contents', () => {
-    const wrapper = render(SearchGridForm, {
-      localVue,
-      mocks: {
-        $route: {
-          path: '/search',
+    const localVue = createLocalVue()
+    const storeMock = new Vuex.Store({
+      modules: {
+        filter: {
+          namespaced: true,
+          state: { isFilterVisible: true },
+        },
+        search: {
+          namespaced: true,
+          state: { query: { q: 'foo' } },
         },
       },
+    })
+    localVue.use(Vuex)
+
+    const wrapper = render(SearchGridForm, {
       store: storeMock,
+      localVue,
+      mocks: {
+        $route: { path: '/search' },
+      },
     })
 
     expect(wrapper.find('form').vm).toBeDefined()
