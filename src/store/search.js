@@ -33,6 +33,7 @@ import {
 } from '~/constants/usage-data-analytics-types'
 import {
   filtersToQueryData,
+  queryStringToQueryData,
   queryStringToSearchType,
 } from '~/utils/search-query-transform'
 import { ALL_MEDIA, AUDIO, IMAGE } from '~/constants/media'
@@ -216,6 +217,7 @@ export const createActions = (services) => ({
   /**
    * On the first server load, parses the URL to set:
    * - `searchType`,
+   * - query q parameter
    * - filters store `filters`,
    * - `query`.
    * Query update is done after filters are set, because SET_FILTERS_FROM_URL
@@ -227,9 +229,11 @@ export const createActions = (services) => ({
    */
   [SET_SEARCH_STATE_FROM_URL]({ commit, dispatch }, { url }) {
     const searchType = queryStringToSearchType(url)
+    const query = queryStringToQueryData(url)
+    commit(SET_Q, { q: query.q })
     commit(SET_SEARCH_TYPE, { searchType })
 
-    commit(`${FILTER}/${SET_FILTERS_FROM_URL}`, { url }, { root: true })
+    dispatch(`${FILTER}/${SET_FILTERS_FROM_URL}`, { url }, { root: true })
 
     dispatch(UPDATE_QUERY)
   },

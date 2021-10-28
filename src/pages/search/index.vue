@@ -1,40 +1,24 @@
 <template>
   <ImageGrid
-    :images="mediaResults"
+    :images="media"
     :can-load-more="true"
-    :is-fetching="isFetching"
-    :fetching-error="isFetchingError"
-    :error-message="errorMessage"
-    :is-finished="isSearchFinished"
+    :fetch-state="mediaFetchState"
     @load-more="onLoadMore"
   />
 </template>
 
 <script>
-import { mapGetters, mapState } from 'vuex'
-import { SEARCH } from '~/constants/store-modules'
-
 export default {
-  name: 'ImageSearch',
+  name: 'SearchIndex',
   props: {
     media: {},
-    query: {},
-  },
-  computed: {
-    ...mapState(SEARCH, ['errorMessage', 'currentPage']),
-    ...mapGetters(SEARCH, [
-      'isFetching',
-      'isFetchingError',
-      'mediaResults',
-      'pageCount',
-      'isSearchFinished',
-      'supportedType',
-    ]),
+    currentMediaPage: {},
+    mediaFetchState: {},
   },
   methods: {
     onLoadMore() {
       const searchParams = {
-        page: this.currentPage[this.supportedType] + 1,
+        page: this.currentMediaPage + 1,
         shouldPersistMedia: true,
       }
       this.$emit('load-more', searchParams)

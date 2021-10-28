@@ -8,6 +8,7 @@ import {
   SET_AUDIO,
   SET_IMAGE,
   SET_MEDIA,
+  SET_Q,
   SET_QUERY,
   SET_SEARCH_TYPE,
   UPDATE_FILTERS,
@@ -528,13 +529,15 @@ describe('Search Store', () => {
     })
 
     it('SET_SEARCH_STATE_FROM_URL sets search type to image', () => {
-      const url = '/search/image?q=cat&source=met&extension=mp3&duration=short'
+      const url =
+        '/search/image?q=puppy&source=met&extension=mp3&duration=short'
       const action = createActions(services)[SET_SEARCH_STATE_FROM_URL]
       action(context, { url })
+      expect(context.commit).toHaveBeenCalledWith(SET_Q, { q: 'puppy' })
       expect(context.commit).toHaveBeenCalledWith(SET_SEARCH_TYPE, {
         searchType: IMAGE,
       })
-      expect(context.commit).toHaveBeenCalledWith(
+      expect(context.dispatch).toHaveBeenCalledWith(
         `${FILTER}/${SET_FILTERS_FROM_URL}`,
         { url },
         { root: true }
@@ -545,11 +548,12 @@ describe('Search Store', () => {
     it('SET_SEARCH_STATE_FROM_URL sets search type to ALL_MEDIA if URL param is not set', () => {
       const action = createActions(services)[SET_SEARCH_STATE_FROM_URL]
       action(context, { url: '/search/?q=cat&source=met&extensions=jpg,png' })
+      expect(context.commit).toHaveBeenCalledWith(SET_Q, { q: 'cat' })
       expect(context.commit).toHaveBeenCalledWith(SET_SEARCH_TYPE, {
         searchType: ALL_MEDIA,
       })
 
-      expect(context.commit).toHaveBeenCalledWith(
+      expect(context.dispatch).toHaveBeenCalledWith(
         `${FILTER}/${SET_FILTERS_FROM_URL}`,
         { url: '/search/?q=cat&source=met&extensions=jpg,png' },
         { root: true }
