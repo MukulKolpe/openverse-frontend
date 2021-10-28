@@ -7,7 +7,6 @@ import {
   RESET_MEDIA,
   SET_AUDIO,
   SET_IMAGE,
-  SET_IMAGE_PAGE,
   SET_MEDIA,
   SET_QUERY,
   SET_SEARCH_TYPE,
@@ -19,7 +18,9 @@ import {
   FETCH_MEDIA,
   HANDLE_MEDIA_ERROR,
   HANDLE_NO_MEDIA,
-  SET_SEARCH_TYPE_FROM_URL,
+  SET_FILTERS_FROM_URL,
+  SET_SEARCH_STATE_FROM_URL,
+  UPDATE_QUERY,
   UPDATE_SEARCH_TYPE,
 } from '~/constants/action-types'
 import { ALL_MEDIA, AUDIO, IMAGE } from '~/constants/media'
@@ -33,18 +34,18 @@ describe('Search Store', () => {
   describe('state', () => {
     it('exports default state', () => {
       const state = store.state()
-      expect(state.audios).toHaveLength(0)
-      expect(state.audiosCount).toBe(0)
-      expect(state.audioPage).toBe(1)
-      expect(state.images).toHaveLength(0)
-      expect(state.imagesCount).toBe(0)
-      expect(state.imagePage).toBe(1)
-      expect(state.pageCount.audios).toBe(0)
-      expect(state.pageCount.images).toBe(0)
-      expect(state.isFetching.audios).toBeFalsy()
-      expect(state.isFetching.images).toBeFalsy()
-      expect(state.isFetchingError.audios).toBeTruthy()
-      expect(state.isFetchingError.images).toBeTruthy()
+      expect(state.searchResults.audio).toHaveLength(0)
+      expect(state.searchResults.image).toHaveLength(0)
+      expect(state.resultCount.audio).toBe(0)
+      expect(state.resultCount.image).toBe(0)
+      expect(state.currentPage.audio).toBe(1)
+      expect(state.currentPage.image).toBe(1)
+      expect(state.pageCount.audio).toBe(0)
+      expect(state.pageCount.image).toBe(0)
+      expect(state.isFetching.audio).toBeFalsy()
+      expect(state.isFetching.image).toBeFalsy()
+      expect(state.isFetchingError.audio).toBeTruthy()
+      expect(state.isFetchingError.image).toBeTruthy()
       expect(state.query.q).toBe(undefined)
       expect(state.errorMessage).toBe(null)
     })
@@ -61,14 +62,14 @@ describe('Search Store', () => {
     it('FETCH_START_MEDIA updates state', () => {
       mutations[FETCH_START_MEDIA](state, { mediaType: IMAGE })
 
-      expect(state.isFetching.images).toBeTruthy()
-      expect(state.isFetchingError.images).toBeFalsy()
+      expect(state.isFetching.image).toBeTruthy()
+      expect(state.isFetchingError.image).toBeFalsy()
     })
 
     it('FETCH_END_MEDIA updates state', () => {
       mutations[FETCH_END_MEDIA](state, { mediaType: IMAGE })
 
-      expect(state.isFetching.images).toBeFalsy()
+      expect(state.isFetching.image).toBeFalsy()
     })
 
     it('FETCH_MEDIA_ERROR updates state', () => {
@@ -77,8 +78,8 @@ describe('Search Store', () => {
         errorMessage: 'error',
       })
 
-      expect(state.isFetching.images).toBeFalsy()
-      expect(state.isFetchingError.images).toBeTruthy()
+      expect(state.isFetching.image).toBeFalsy()
+      expect(state.isFetchingError.image).toBeTruthy()
       expect(state.errorMessage).toBe('error')
     })
 
@@ -96,17 +97,10 @@ describe('Search Store', () => {
       expect(state.image).toEqual(params.image)
     })
 
-    it('SET_IMAGE_PAGE updates state', () => {
-      const params = { imagePage: 1 }
-      mutations[SET_IMAGE_PAGE](state, params)
-
-      expect(state.imagePage).toBe(params.imagePage)
-    })
-
     it('SET_MEDIA updates state persisting images', () => {
       const img1 = { title: 'Foo', creator: 'foo', tags: [] }
       const img2 = { title: 'Bar', creator: 'bar', tags: [] }
-      state.images = [img1]
+      state.searchResults.image = [img1]
       const params = {
         media: [img2],
         mediaCount: 2,
@@ -116,14 +110,14 @@ describe('Search Store', () => {
       }
       mutations[SET_MEDIA](state, params)
 
-      expect(state.images).toEqual([img1, img2])
-      expect(state.imagesCount).toBe(params.mediaCount)
-      expect(state.imagePage).toBe(params.page)
+      expect(state.searchResults.image).toEqual([img1, img2])
+      expect(state.resultCount.image).toBe(params.mediaCount)
+      expect(state.currentPage.image).toBe(params.page)
     })
 
     it('SET_MEDIA updates state not persisting images', () => {
       const img = { title: 'Foo', creator: 'bar', tags: [] }
-      state.images = ['img1']
+      state.searchResults.image = ['img1']
       const params = {
         media: [img],
         mediaCount: 2,
@@ -133,19 +127,19 @@ describe('Search Store', () => {
       }
       mutations[SET_MEDIA](state, params)
 
-      expect(state.images).toEqual([img])
-      expect(state.imagesCount).toBe(params.mediaCount)
-      expect(state.imagePage).toBe(params.page)
+      expect(state.searchResults.image).toEqual([img])
+      expect(state.resultCount.image).toBe(params.mediaCount)
+      expect(state.currentPage.image).toBe(params.page)
     })
 
     it('SET_MEDIA updates state with default count and page', () => {
       const img = { title: 'Foo', creator: 'bar', tags: [] }
-      state.images = ['img1']
+      state.searchResults.image = ['img1']
       const params = { media: [img], mediaType: IMAGE }
       mutations[SET_MEDIA](state, params)
 
-      expect(state.imagesCount).toBe(0)
-      expect(state.imagePage).toBe(1)
+      expect(state.resultCount.image).toBe(0)
+      expect(state.currentPage.image).toBe(1)
     })
 
     it('SET_QUERY updates state', () => {
@@ -164,7 +158,7 @@ describe('Search Store', () => {
       mutations[SET_QUERY](state, params)
 
       expect(state.query.q).toBe('bar')
-      expect(state.images).toEqual([])
+      expect(state.searchResults.image).toEqual([])
     })
 
     it('MEDIA_NOT_FOUND throws an error', () => {
@@ -181,19 +175,21 @@ describe('Search Store', () => {
 
     it('RESET_MEDIA resets the media type state', () => {
       state = {
-        images: [{ id: 'image1' }, { id: 'image2' }],
-        imagePage: 2,
-        imagesCount: 200,
+        searchResults: [{ id: 'image1' }, { id: 'image2' }],
+        currentPage: { image: 2 },
+        resultCount: {
+          image: 200,
+        },
         pageCount: {
-          images: 2,
+          image: 2,
         },
       }
 
       mutations[RESET_MEDIA](state, { mediaType: IMAGE })
-      expect(state.images).toStrictEqual([])
-      expect(state.imagesCount).toEqual(0)
+      expect(state.searchResults.image).toStrictEqual([])
+      expect(state.resultCount.image).toEqual(0)
       expect(state.imagePage).toBe(undefined)
-      expect(state.pageCount.images).toEqual(0)
+      expect(state.pageCount.image).toEqual(0)
     })
   })
 
@@ -227,9 +223,12 @@ describe('Search Store', () => {
       }
       services = { [AUDIO]: audioServiceMock, [IMAGE]: imageServiceMock }
       state = {
-        audios: [{ id: 'foo' }, { id: 'bar' }, { id: 'zeta' }],
-        images: [{ id: 'foo' }, { id: 'bar' }, { id: 'zeta' }],
+        searchResults: {
+          image: [{ id: 'foo' }, { id: 'bar' }, { id: 'zeta' }],
+          audio: [{ id: 'foo' }, { id: 'bar' }, { id: 'zeta' }],
+        },
         query: { q: 'foo query' },
+        searchType: IMAGE,
       }
 
       context = {
@@ -241,22 +240,20 @@ describe('Search Store', () => {
     })
 
     it('FETCH_MEDIA throws an error on unknown media type', async () => {
+      state.searchType = 'unknown'
       const action = createActions(services)[FETCH_MEDIA]
-      const params = {
-        mediaType: 'unknown',
-        page: 1,
-      }
+      const params = { page: 1 }
       await expect(action(context, params)).rejects.toThrow(
         'Cannot fetch unknown media type "unknown"'
       )
     })
 
     it('FETCH_MEDIA on success', async () => {
+      state.searchType = ALL_MEDIA
       const params = {
-        q: 'foo',
-        page: 1,
-        shouldPersistMedia: false,
-        mediaType: IMAGE,
+        q: 'foo query',
+        page: 2,
+        shouldPersistMedia: true,
       }
       const action = createActions(services)[FETCH_MEDIA]
       await action(context, params)
@@ -274,18 +271,19 @@ describe('Search Store', () => {
         page: params.page,
         mediaType: IMAGE,
       })
+      delete params.shouldPersistMedia
       expect(services[IMAGE].search).toHaveBeenCalledWith(params)
     })
 
     it('FETCH_MEDIA dispatches SEND_SEARCH_QUERY_EVENT', async () => {
-      const params = { q: 'foo', shouldPersistMedia: false, mediaType: IMAGE }
+      const params = { shouldPersistMedia: false }
       const action = createActions(services)[FETCH_MEDIA]
       await action(context, params)
 
       expect(context.dispatch).toHaveBeenCalledWith(
         `${USAGE_DATA}/${SEND_SEARCH_QUERY_EVENT}`,
         {
-          query: params.q,
+          query: state.query.q,
           sessionId: context.rootState.user.usageSessionId,
         },
         { root: true }
@@ -339,7 +337,6 @@ describe('Search Store', () => {
       const mediaType = IMAGE
       const params = {
         q: 'foo',
-        page: undefined,
         shouldPersistMedia: false,
         mediaType,
       }
@@ -530,30 +527,34 @@ describe('Search Store', () => {
       expect(context.commit.mock.calls.length).toEqual(0)
     })
 
-    it('SET_SEARCH_TYPE_FROM_URL sets search type to image', () => {
-      const action = createActions(services)[SET_SEARCH_TYPE_FROM_URL]
-      action(context, { url: '/search/image?q=cat&source=met' })
+    it('SET_SEARCH_STATE_FROM_URL sets search type to image', () => {
+      const url = '/search/image?q=cat&source=met&extension=mp3&duration=short'
+      const action = createActions(services)[SET_SEARCH_STATE_FROM_URL]
+      action(context, { url })
       expect(context.commit).toHaveBeenCalledWith(SET_SEARCH_TYPE, {
         searchType: IMAGE,
       })
       expect(context.commit).toHaveBeenCalledWith(
-        `${FILTER}/${UPDATE_FILTERS}`,
-        { searchType: IMAGE },
+        `${FILTER}/${SET_FILTERS_FROM_URL}`,
+        { url },
         { root: true }
       )
+      expect(context.dispatch).toHaveBeenCalledWith(UPDATE_QUERY)
     })
 
-    it('SET_SEARCH_TYPE_FROM_URL sets search type to ALL_MEDIA if URL param is not set', () => {
-      const action = createActions(services)[SET_SEARCH_TYPE_FROM_URL]
-      action(context, { url: '/search/?q=cat&source=met' })
+    it('SET_SEARCH_STATE_FROM_URL sets search type to ALL_MEDIA if URL param is not set', () => {
+      const action = createActions(services)[SET_SEARCH_STATE_FROM_URL]
+      action(context, { url: '/search/?q=cat&source=met&extensions=jpg,png' })
       expect(context.commit).toHaveBeenCalledWith(SET_SEARCH_TYPE, {
         searchType: ALL_MEDIA,
       })
+
       expect(context.commit).toHaveBeenCalledWith(
-        `${FILTER}/${UPDATE_FILTERS}`,
-        { searchType: 'all' },
+        `${FILTER}/${SET_FILTERS_FROM_URL}`,
+        { url: '/search/?q=cat&source=met&extensions=jpg,png' },
         { root: true }
       )
+      expect(context.dispatch).toHaveBeenCalledWith(UPDATE_QUERY)
     })
 
     it('UPDATE_SEARCH_TYPE sets search type to ALL_MEDIA if URL param is not set', () => {

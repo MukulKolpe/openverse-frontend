@@ -1,9 +1,10 @@
 import SearchGrid from '~/components/SearchGrid'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import Vuex from 'vuex'
 import VueI18n from 'vue-i18n'
 import { createLocalVue } from '@vue/test-utils'
 import SaferBrowsing from '~/components/SaferBrowsing'
+import { IMAGE } from '~/constants/media'
 
 const messages = require('~/locales/en.json')
 
@@ -42,16 +43,29 @@ describe('SearchGrid', () => {
           namespaced: true,
           state: {
             query: { q: 'foo' },
-            imagesCount: 4,
-            imagePage: 1,
-            images: [
+            currentPage: {
+              image: 1,
+            },
+            searchResults: {
+              image: [
+                { id: 'image1', url: 'https://wp.org/image1.jpg' },
+                { id: 'image2', url: 'https://wp.org/image2.svg' },
+              ],
+            },
+            pageCount: { images: 2 },
+          },
+          getters: {
+            mediaFetchState: () => ({
+              isFetching: false,
+              fetchingError: null,
+            }),
+            supportedType: () => IMAGE,
+            mediaResults: () => [
               { id: 'image1', url: 'https://wp.org/image1.jpg' },
               { id: 'image2', url: 'https://wp.org/image2.svg' },
             ],
-            pageCount: { images: 2 },
-            isFetchingError: { images: false },
+            mediaResultsCount: () => 4,
           },
-          getters: { isFetching: () => false, isFetchingError: () => false },
         },
       },
     })
@@ -82,19 +96,5 @@ describe('SearchGrid', () => {
     screen.getAllByRole('button', { text: /no/i })
     // Safer browsing
     screen.getAllByRole('button', { text: /safer-browsing/i })
-
-    // Images
-    const images = screen.getAllByRole('img')
-    expect(images.length).toEqual(2)
-  })
-
-  it('clicking on load more button loads more images', async () => {
-    render(SearchGrid, options)
-
-    // Load more button
-    const loadMoreButton = screen.getByText(/browse-page.load/i)
-    await fireEvent.click(loadMoreButton)
-
-    // Cannot test emitted event with testing library
   })
 })

@@ -33,7 +33,7 @@ export default {
       clearFilters: CLEAR_FILTERS,
     }),
     ...mapMutations(FILTER, {
-      setFilterVisible: SET_FILTER_IS_VISIBLE,
+      setFilterVisibility: SET_FILTER_IS_VISIBLE,
     }),
     onUpdateFilter({ code, filterType }) {
       this.toggleFilter({ code, filterType })
@@ -42,7 +42,7 @@ export default {
       this.clearFilters()
     },
     onToggleSearchGridFilter() {
-      this.setFilterVisible({
+      this.setFilterVisibility({
         isFilterVisible: !this.isFilterVisible,
       })
     },

@@ -61,3 +61,9 @@ export interface ActiveMediaState {
   type: 'image' | 'audio' | null
   id: string | null
 }
+
+export interface MediaFetchState {
+  isFetching: boolean
+  fetchingError: string | null
+  isFinished?: boolean
+}

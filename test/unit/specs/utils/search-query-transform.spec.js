@@ -1,7 +1,7 @@
 import clonedeep from 'lodash.clonedeep'
 import {
   filtersToQueryData,
-  queryToFilterData,
+  queryStringToFilterData,
   queryStringToQueryData,
 } from '~/utils/search-query-transform'
 import { filterData } from '~/store/filter'
@@ -112,7 +112,7 @@ describe('searchQueryTransform', () => {
     }
     const query = ''
 
-    const result = queryToFilterData(query)
+    const result = queryStringToFilterData(query)
     expect(result).toEqual(filters) // toEqual checks for value equality
   })
   it('queryToFilterData all image filters', () => {
@@ -253,7 +253,7 @@ describe('searchQueryTransform', () => {
       { code: 'jamendo', checked: true },
       { code: 'wikimedia', checked: true },
     ]
-    const result = queryToFilterData(queryString, testFilters)
+    const result = queryStringToFilterData(queryString, testFilters)
     expect(result).toEqual(filters) // toEqual checks for value equality
   })
   it('queryStringToQueryData', () => {

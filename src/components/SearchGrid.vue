@@ -1,65 +1,41 @@
 <template>
   <section class="search-grid">
-    <div v-show="!isFetching" class="results-meta">
-      <span class="caption font-semibold">
-        {{ _imagesCount }}
-      </span>
-      <SearchRating
-        v-if="query.q"
-        :search-term="query.q"
-        class="desk:mr-auto desk:pl-6"
-      />
+    <div
+      v-show="!mediaFetchState.isFetching"
+      class="results-meta flex flex-col desk:flex-row justify-between px-6"
+    >
+      <div class="font-semibold caption flex desk:me-auto justify-between">
+        <span class="pe-6">
+          {{ mediaCount }}
+        </span>
+        <SearchRating v-if="query.q" :search-term="query.q" />
+      </div>
       <SaferBrowsing />
     </div>
-    <ImageGrid
-      :images="images"
-      :is-fetching="isFetching"
-      :fetching-error="isFetchingError"
-      :error-message="errorMessage"
-      :is-finished="isFinished"
-      @onLoadMoreImages="onLoadMoreImages"
-    />
+    <slot name="media" />
     <MetaSearchForm
-      type="image"
-      :noresult="imagesCount === 0"
+      :type="searchType"
+      :noresult="noresult"
       :query="query"
-      :supported="true"
+      :supported="supported"
     />
   </section>
 </template>
 
 <script>
-import { mapActions, mapGetters, mapMutations, mapState } from 'vuex'
+import { mapGetters, mapState } from 'vuex'
 import { SEARCH } from '~/constants/store-modules'
-import { IMAGE } from '~/constants/media'
-import { FETCH_MEDIA } from '~/constants/action-types'
-import { SET_MEDIA } from '~/constants/mutation-types'
-import ImageGrid from '~/components/ImageGrid/ImageGrid'
+import { ALL_MEDIA, AUDIO, IMAGE } from '~/constants/media'
 import SearchRating from '~/components/SearchRating'
 
 export default {
   name: 'SearchGrid',
-  components: { ImageGrid, SearchRating },
-  async fetch() {
-    if (!this.images.length) {
-      await this.fetchMedia({
-        ...this.query,
-        mediaType: IMAGE,
-      })
-    }
-  },
+  components: { SearchRating },
   computed: {
-    ...mapState(SEARCH, [
-      'images',
-      'imagePage',
-      'errorMessage',
-      'query',
-      'imagesCount',
-      'pageCount',
-    ]),
-    ...mapGetters(SEARCH, ['isFetching', 'isFetchingError']),
-    _imagesCount() {
-      const count = this.imagesCount
+    ...mapState(SEARCH, ['query', 'searchType']),
+    ...mapGetters(SEARCH, ['mediaFetchState', 'mediaResultsCount']),
+    mediaCount() {
+      const count = this.mediaResultsCount
       if (count === 0) {
         return this.$t('browse-page.image-no-results')
       }
@@ -70,20 +46,20 @@ export default {
       }
       return this.$tc(i18nKey, count, { localeCount })
     },
-    isFinished() {
-      return this.imagePage >= this.pageCount.images
+    noresult() {
+      // noresult for audio and video are hardcoded since Openverse
+      // does not yet support built-in audio search
+      return [IMAGE, ALL_MEDIA].includes(this.searchType)
+        ? this.mediaCount === 0
+        : false
     },
-  },
-  methods: {
-    ...mapMutations(SEARCH, { setMedia: SET_MEDIA }),
-    ...mapActions(SEARCH, { fetchMedia: FETCH_MEDIA }),
-    onLoadMoreImages() {
-      const searchParams = {
-        page: this.imagePage + 1,
-        shouldPersistMedia: true,
-        ...this.query,
+    supported() {
+      if (this.searchType === AUDIO) {
+        // Only show audio results if non-image results are supported
+        return process.env.enableAudio
+      } else {
+        return [IMAGE, ALL_MEDIA].includes(this.searchType)
       }
-      this.$emit('onLoadMoreImages', searchParams)
     },
   },
 }

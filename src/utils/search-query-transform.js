@@ -85,6 +85,15 @@ export const filtersToQueryData = (
   return queryDataObject
 }
 
+const removeEmptyProperties = (obj) => {
+  return Object.entries(obj).reduce((obj, [key, value]) => {
+    if (value) {
+      obj[key] = value
+    }
+    return obj
+  }, {})
+}
+
 const parseQueryString = (
   queryString,
   queryStringParamKey,
@@ -158,7 +167,7 @@ const getMediaTypeApiFilters = (filterParameter, parameterFilters) => {
  * @param {string} queryString browser filter query string
  * @param {Object} defaultFilters default filters for testing purposes
  */
-export const queryToFilterData = (queryString, defaultFilters = null) => {
+export const queryStringToFilterData = (queryString, defaultFilters = null) => {
   const filters = defaultFilters
     ? clonedeep(defaultFilters)
     : clonedeep(filterData)
@@ -205,8 +214,9 @@ export const queryToFilterData = (queryString, defaultFilters = null) => {
  * TODO: we might be able to refactor to eliminate the need for these two
  * separate functions.
  * @param {string} queryString
+ * @param {boolean} [hideEmpty] only return properties with non-empty values
  */
-export const queryStringToQueryData = (queryString) => {
+export const queryStringToQueryData = (queryString, hideEmpty = true) => {
   const queryDataObject = {}
   const searchType = queryStringToSearchType(queryString)
   const filterTypes = getMediaFilterTypes(searchType).filter(
@@ -221,6 +231,8 @@ export const queryStringToQueryData = (queryString) => {
   })
   queryDataObject.q = getParameterByName('q', queryString)
   queryDataObject.mature = getParameterByName('mature', queryString)
-
+  if (hideEmpty) {
+    return removeEmptyProperties(queryDataObject)
+  }
   return queryDataObject
 }

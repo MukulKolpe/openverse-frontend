@@ -2,7 +2,7 @@ import findIndex from 'lodash.findindex'
 import clonedeep from 'lodash.clonedeep'
 
 import local from '~/utils/local'
-import { queryToFilterData } from '~/utils/search-query-transform'
+import { queryStringToFilterData } from '~/utils/search-query-transform'
 import {
   ALL_MEDIA,
   AUDIO,
@@ -269,7 +269,7 @@ const actions = {
     dispatch(`${SEARCH}/${UPDATE_QUERY}`, null, { root: true })
   },
   [SET_FILTERS_FROM_URL]({ commit }, { url }) {
-    const newFilterData = queryToFilterData(url)
+    const newFilterData = queryStringToFilterData(url)
     commit(REPLACE_FILTERS, { newFilterData })
   },
 }

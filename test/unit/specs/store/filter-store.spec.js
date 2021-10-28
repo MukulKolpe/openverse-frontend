@@ -221,8 +221,10 @@ describe('Filter Store', () => {
     })
 
     it('SET_FILTERS_FROM_URL', () => {
+      // Sets only the filters that are available for current media type.
+      // Here, 'ogg' extension is not available for 'image', so it is ignored
       const url =
-        'https://wp.org/openverse/search/image?q=cat&license=cc0,by&searchBy=creator&extension=jpg&mature=true&source=met'
+        'https://wp.org/openverse/search/image?q=cat&license=cc0,by&searchBy=creator&extension=jpg,ogg&mature=true'
       actions[SET_FILTERS_FROM_URL](
         {
           commit: commitMock,
@@ -231,6 +233,22 @@ describe('Filter Store', () => {
         },
         { url }
       )
+      const actualFilterData = commitMock.mock.calls[0][1].newFilterData
+      const isFilterChecked = (filterType, filterCode) =>
+        actualFilterData[filterType].find((item) => item.code === filterCode)
+          .checked
+      expect(isFilterChecked('licenses', 'cc0')).toBe(true)
+      expect(isFilterChecked('licenses', 'by')).toBe(true)
+      expect(isFilterChecked('searchBy', 'creator')).toBe(true)
+      expect(isFilterChecked('imageExtensions', 'jpg')).toBe(true)
+
+      expect(
+        actualFilterData.imageExtensions.findIndex(
+          (item) => item.code === 'ogg'
+        )
+      ).toEqual(-1)
+      expect(isFilterChecked('audioExtensions', 'ogg')).toBe(false)
+      expect(actualFilterData.mature).toBe(true)
       expect(commitMock).toHaveBeenCalledWith(REPLACE_FILTERS, {
         newFilterData: {
           aspectRatios: [
@@ -380,6 +398,7 @@ describe('Filter Store', () => {
         },
       })
     })
+
     it('CLEAR_FILTERS resets filters to initial state', async () => {
       state.filters.licenses = [
         { code: 'by', checked: true },

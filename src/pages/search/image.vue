@@ -1,19 +1,27 @@
 <template>
-  <SearchGrid
-    id="tab-image"
-    role="tabpanel"
-    aria-labelledby="image"
-    data-testid="search-grid"
-    @onLoadMoreImages="onLoadMoreImages"
+  <ImageGrid
+    :images="media"
+    :can-load-more="true"
+    :fetch-state="mediaFetchState"
+    @load-more="onLoadMore"
   />
 </template>
 
 <script>
 export default {
   name: 'ImageSearch',
+  props: {
+    media: {},
+    currentMediaPage: {},
+    mediaFetchState: {},
+  },
   methods: {
-    onLoadMoreImages(searchParams) {
-      this.$emit('onLoadMoreItems', searchParams)
+    onLoadMore() {
+      const searchParams = {
+        page: this.currentMediaPage + 1,
+        shouldPersistMedia: true,
+      }
+      this.$emit('load-more', searchParams)
     },
   },
 }

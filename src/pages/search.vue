@@ -1,6 +1,6 @@
 <template>
   <div class="browse-page">
-    <div class="search columns">
+    <div class="search columns is-gapless m-0">
       <div class="desk:hidden">
         <AppModal v-if="isFilterVisible" @close="onToggleSearchGridFilter">
           <SearchGridFilter />
@@ -16,7 +16,23 @@
         <SearchGridForm @onSearchFormSubmit="onSearchFormSubmit" />
         <SearchTypeTabs />
         <FilterDisplay v-if="shouldShowFilterTags" />
-        <NuxtChild :key="$route.path" @onLoadMoreItems="onLoadMoreItems" />
+        <SearchGrid
+          :id="`tab-${searchType}`"
+          role="tabpanel"
+          :aria-labelledby="searchType"
+          data-testid="search-grid"
+        >
+          <template #media>
+            <NuxtChild
+              :key="$route.path"
+              :media="mediaResults"
+              :media-fetch-state="mediaFetchState"
+              :current-media-page="currentMediaPage"
+              :is-filter-visible="isFilterVisible"
+              @load-more="fetchMedia"
+            />
+          </template>
+        </SearchGrid>
         <ScrollButton
           data-testid="scroll-button"
           :show-btn="showScrollButton"
@@ -26,22 +42,18 @@
   </div>
 </template>
 <script>
+import { mapActions, mapGetters, mapMutations, mapState } from 'vuex'
+import { ALL_MEDIA, IMAGE } from '~/constants/media'
+import { FILTER, SEARCH } from '~/constants/store-modules'
 import {
   FETCH_MEDIA,
-  SET_FILTERS_FROM_URL,
-  SET_SEARCH_TYPE_FROM_URL,
+  SET_SEARCH_STATE_FROM_URL,
   UPDATE_SEARCH_TYPE,
 } from '~/constants/action-types'
 import { SET_QUERY, SET_FILTER_IS_VISIBLE } from '~/constants/mutation-types'
-import {
-  queryStringToQueryData,
-  queryStringToSearchType,
-} from '~/utils/search-query-transform'
-import local from '~/utils/local'
+import { queryStringToSearchType } from '~/utils/search-query-transform'
 import { screenWidth } from '~/utils/get-browser-info'
-import { ALL_MEDIA, IMAGE } from '~/constants/media'
-import { mapActions, mapMutations, mapState } from 'vuex'
-import { FILTER, SEARCH } from '~/constants/store-modules'
+import local from '~/utils/local'
 import debounce from 'lodash.debounce'
 
 const BrowsePage = {
@@ -51,13 +63,17 @@ const BrowsePage = {
   },
   scrollToTop: false,
   async fetch() {
-    const url = this.$route.fullPath
+    // For the first server load of the page, set the Vuex store values for
+    // search type, query and filters from the path.
+    // If the current searchType media results are empty,
+    // fetch the media from API using query data from Vuex store.
     if (process.server) {
-      const query = queryStringToQueryData(url)
-      this.setQuery({ query })
+      const url = this.$route.fullPath
+      await this.setSearchStateFromUrl({ url })
     }
-    await this.setSearchTypeFromUrl({ url })
-    await this.setFiltersFromUrl({ url })
+    if (!this.mediaResults.length) {
+      await this.fetchMedia()
+    }
   },
   data: () => ({
     showScrollButton: false,
@@ -85,6 +101,12 @@ const BrowsePage = {
   computed: {
     ...mapState(SEARCH, ['query', 'searchType']),
     ...mapState(FILTER, ['isFilterVisible']),
+    ...mapGetters(SEARCH, [
+      'currentMediaPage',
+      'mediaFetchState',
+      'mediaResults',
+      'supportedType',
+    ]),
     mediaType() {
       // Default to IMAGE until media search/index is generalized
       return this.searchType !== ALL_MEDIA ? this.searchType : IMAGE
@@ -93,23 +115,11 @@ const BrowsePage = {
   methods: {
     ...mapActions(SEARCH, {
       fetchMedia: FETCH_MEDIA,
-      setSearchTypeFromUrl: SET_SEARCH_TYPE_FROM_URL,
+      setSearchStateFromUrl: SET_SEARCH_STATE_FROM_URL,
       updateSearchType: UPDATE_SEARCH_TYPE,
     }),
-    ...mapActions(FILTER, { setFiltersFromUrl: SET_FILTERS_FROM_URL }),
-    ...mapMutations(SEARCH, {
-      setQuery: SET_QUERY,
-      setFilterVisibility: SET_FILTER_IS_VISIBLE,
-    }),
-    ...mapMutations(FILTER, {
-      setFilterVisibility: SET_FILTER_IS_VISIBLE,
-    }),
-    getMediaItems(params, mediaType) {
-      this.fetchMedia({ ...params, mediaType })
-    },
-    onLoadMoreItems(searchParams) {
-      this.getMediaItems(searchParams, this.mediaType)
-    },
+    ...mapMutations(FILTER, { setFilterVisibility: SET_FILTER_IS_VISIBLE }),
+    ...mapMutations(SEARCH, { setQuery: SET_QUERY }),
     onSearchFormSubmit(searchParams) {
       this.setQuery(searchParams)
     },
@@ -128,19 +138,23 @@ const BrowsePage = {
     },
   },
   watch: {
-    query(newQuery) {
+    async query(newQuery) {
       if (newQuery) {
         const newPath = this.localePath({
           path: this.$route.path,
           query: newQuery,
         })
         this.$router.push(newPath)
-        this.getMediaItems(newQuery, this.mediaType)
+        await this.fetchMedia()
       }
     },
-    $route(route) {
-      const searchType = queryStringToSearchType(route.path)
-      this.updateSearchType({ searchType })
+    async $route(route) {
+      this.updateSearchType({ searchType: queryStringToSearchType(route.path) })
+      // Only fetch if supported media type is chosen, and the results array
+      // for current media type empty in the Vuex search store.
+      if (!!this.supportedType && !this.mediaResults.length) {
+        this.fetchMedia()
+      }
     },
   },
 }
@@ -149,5 +163,14 @@ export default BrowsePage
 </script>
 
 <style lang="scss" scoped>
-@import '~/styles/results-page.scss';
+.search-grid-ctr {
+  padding: 0;
+  background-color: $color-wp-gray-0;
+  min-height: 600px;
+
+  @include mobile {
+    width: 100%;
+    flex: none;
+  }
+}
 </style>
